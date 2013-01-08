@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>01.07.2013 | Canvas Experiment by Brian Reavis</title>
+		<meta name="description" content="">
+		<meta name="viewport" content="width=device-width">
+		<link rel="stylesheet" href="../base/reset.css">
+		<link rel="stylesheet" href="../base/style.css">
+		<script src="../base/common.js"></script>
+		<script src="../base/utils.js"></script>
+		<style>body { background: url(../base/images/noisy_net_@2X.png); background-size: 200px; }</style>
+	</head>
+	<body>
+		<script>
+			// constants
+			var STREAMER_LENGTH = 15;
+			var PARTICLE_COUNT = 100;
+			var MAX_FRAMES = 100;
+
+			// structures
+			var Particle = function() {
+				this.r_mult = Math.random() + 0.5;
+				this.r_offset = Math.random() * Math.PI * 2;
+				this.t_offset = Math.random() * Math.PI * 2;
+				this.r = 0;
+				this.t = 0;
+				this.energy = 0;
+				this.coords = [];
+				this.i = 0;
+
+				var rb = 255 - Math.round(Math.random() * 20);
+				this.rgb = [
+					Math.round(rb * (1 - Math.random() * 0.6)),
+					Math.round(Math.random() * 20),
+					rb
+				].join(',');
+
+				for (var i = 0; i < STREAMER_LENGTH; i++) {
+					this.coords.push({r: 0, t: 0});
+				}
+			};
+
+			Particle.prototype.render = function(stage) {
+				this.r = Math.sin(-stage.frame / 10 + this.r_offset) * stage.height * 0.25 * this.r_mult;
+				this.t = stage.frame / 20 + this.t_offset;
+				this.coords[this.i % STREAMER_LENGTH] = {r: this.r, t: this.t};
+				this.i++;
+
+				// render streamer
+				var p0, p1;
+				var x_offset = stage.width / 2;
+				var y_offset = stage.height / 2;
+				stage.context.lineWidth = 2;
+				for (var i = 1; i < STREAMER_LENGTH - 1; i++) {
+					var perc = (i - 1) / (STREAMER_LENGTH - 2);
+
+					stage.context.lineWidth = Math.pow(Math.sin(perc * Math.PI), 1) * 4;
+					stage.context.strokeStyle = 'rgba(' + this.rgb + ',' + Math.sin(perc * Math.PI) + ')';
+					p0 = this.coords[(this.i + i) % STREAMER_LENGTH];
+					p1 = this.coords[(this.i + i + 1) % STREAMER_LENGTH];
+
+					// main line
+					stage.context.beginPath();
+					stage.context.moveTo(x_offset + Math.cos(p0.t) * p0.r, y_offset + Math.sin(p0.t) * p0.r);
+					stage.context.lineTo(x_offset + Math.cos(p1.t) * p1.r, y_offset + Math.sin(p1.t) * p1.r);
+					stage.context.stroke();
+					stage.context.closePath();
+
+					// secondary lines
+					stage.context.strokeStyle = 'rgba(' + this.rgb + ',' + Math.sin(perc * Math.PI)/2 + ')';
+					p0 = this.coords[(this.i) % STREAMER_LENGTH];
+					stage.context.beginPath();
+					stage.context.moveTo(x_offset + Math.cos(p0.t) * p0.r, y_offset + Math.sin(p0.t) * p0.r);
+					stage.context.lineTo(x_offset + Math.cos(p1.t) * p1.r, y_offset + Math.sin(p1.t) * p1.r);
+					stage.context.stroke();
+					stage.context.closePath();
+
+					// point
+					stage.context.fillStyle = 'rgb(0,0,0)';
+					stage.context.lineWidth = 4;
+					stage.context.beginPath();
+					stage.context.arc(x_offset + Math.cos(p0.t) * p0.r,y_offset + Math.sin(p0.t) * p0.r, 5, 0, Math.PI * 2, true);
+					stage.context.fill();
+					stage.context.stroke();
+					stage.context.closePath();
+				}
+			};
+
+			// initialize
+			var particles = [];
+			for (var i = 0; i < PARTICLE_COUNT; i++) {
+				particles.push(new Particle());
+			}
+
+			// animation
+			init({
+				center: true,
+				clear: true
+			}, function(stage) {
+				for (var i = 0; i < particles.length; i++) {
+					particles[i].render(stage);
+				}
+			});
+		</script>
+	</body>
+</html>
