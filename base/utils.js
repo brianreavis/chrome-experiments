@@ -1,4 +1,3 @@
-
 var utils = {};
 
 utils.createCanvas = function() {
