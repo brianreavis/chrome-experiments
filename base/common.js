@@ -27,9 +27,20 @@ var init = function(options, draw) {
 	context.fillRect(0, 0, canvas.width, canvas.height);
 	context.fillStyle = 'rgb(255,255,255)';
 
+	// fps meter
+	var time_last = new Date().getTime();
+	var el_fps = document.createElement('div');
+	el_fps.setAttribute('id', 'fps');
+	document.body.appendChild(el_fps);
+
 	// animation loop
 	utils.addEvent(window, 'resize', redraw);
 	var loop = function() {
+		var time_now = new Date().getTime();
+		var delta = (time_now - time_last) / 1000;
+		time_last = time_now;
+		el_fps.innerHTML = String(Math.round(1 / delta));
+
 		redraw();
 		requestAnimationFrame(loop);
 	};
