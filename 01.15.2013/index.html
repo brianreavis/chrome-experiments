@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>Spore Constellation | Chrome Experiment by Brian Reavis</title>
+		<meta name="description" content="">
+		<meta name="viewport" content="width=device-width">
+		<link rel="stylesheet" href="../base/reset.css">
+		<link rel="stylesheet" href="../base/style.css">
+		<script src="../base/common.js"></script>
+		<script src="../base/utils.js"></script>
+	</head>
+	<body>
+		<div id="github-banner"><a href="https://github.com/brianreavis/chrome-experiments">Fork me on GitHub</a></div>
+		<header>
+			<h1>Spore Constellation</h1>
+			<h2>Chrome Experiment by <a href="http://thirdroute.com">Brian Reavis</a></h2>
+		</header>
+		<script>
+			// constants and definitions
+			var TWO_PI = Math.PI * 2;
+			var SPORE_COUNT = 5;
+			var SPORE_SPAWN_PROBABILITY = 0.025;
+			var SPORE_MAX_POPULATION = 250;
+			var SPORE_LIFESPAN = 200;
+			var SPORE_GROWTH_RESOLUTION = 100;
+			var SPORE_REPRODUCTIVE_CAPACITY = 2;
+			var spores = [];
+
+			// classes
+			var Point = function(x, y) {
+				this.x = x;
+				this.y = y;
+			};
+
+			var Spore = function(x, y, parent) {
+				var b = 255 - Math.round(Math.random() * 100);
+				this.rgb = [b,b,b].join(',');
+
+				this.depth = parent ? parent.depth + 1 : 1;
+				this.parent = parent;
+				this.position = new Point(x, y);
+				this.age = 0;
+				this.lifespan = SPORE_LIFESPAN + (Math.random() - 0.5) * 10;
+				this.children = [];
+				this.edge = [];
+				this.opacity = 1 - Math.random() * 0.8;
+
+				if (parent && Math.random() < 0.25) {
+					this.speed = 0.01 * window.devicePixelRatio + parent.speed * 0.6;
+				} else {
+					this.speed = 0.02 * window.devicePixelRatio + Math.random() * 0.15 * window.devicePixelRatio;
+				}
+
+				var pt;
+				var perturbation = Math.random() * 0.25;
+				for (var i = 0; i < SPORE_GROWTH_RESOLUTION; i++) {
+					pt = new Point(0, 0);
+					pt.theta = i / SPORE_GROWTH_RESOLUTION * TWO_PI + Math.random() * 0.025;
+					pt.velocity = this.speed + perturbation * Math.random();
+					this.edge.push(pt);
+				}
+			};
+
+			Spore.prototype.spawn = function(stage) {
+				if (this.children.length === SPORE_REPRODUCTIVE_CAPACITY) return;
+				if (spores.length >= SPORE_MAX_POPULATION) return;
+
+				var i, p, r, x1, y1;
+				var d = 20 * window.devicePixelRatio + this.age * this.speed + Math.random() * 60 * window.devicePixelRatio;
+				var theta = Math.random() * TWO_PI;
+				var x = this.position.x + d * Math.cos(theta);
+				var y = this.position.y + d * Math.sin(theta);
+				var spore = new Spore(x, y, this);
+				spore.parent = this;
+				//spore.rgb = this.rgb.split(',');
+				//spore.rgb[0] = Math.round(Math.max(0, Math.min(255, parseInt(spore.rgb[0], 10) + (Math.random() - 0.5) * 5)));
+				//spore.rgb[1] = Math.round(Math.max(0, Math.min(255, parseInt(spore.rgb[1], 10) + (Math.random() - 0.5) * 60)));
+				//spore.rgb[2] = Math.round(Math.max(0, Math.min(255, parseInt(spore.rgb[2], 10) + (Math.random() - 0.5) * 40)));
+				//spore.rgb = spore.rgb.join(',');
+				spores.push(spore);
+				this.children.push(spore);
+
+				stage.context.lineWidth = window.devicePixelRatio * Math.max(1, 1.4 - this.depth * 0.1);
+				stage.context.strokeStyle = 'rgba(80,80,80,0.4)';//'rgba(255,255,255,0.9)';
+				stage.context.beginPath();
+				stage.context.moveTo(this.position.x, this.position.y);
+				stage.context.lineTo(x, y);
+				stage.context.stroke();
+				stage.context.closePath();
+
+				stage.context.strokeStyle = 'rgba(255,255,255,0.95)';
+				stage.context.beginPath();
+				r = spore.speed * 8;
+				for (i = 0; i <= 20; i++) {
+					p = i / 20 * TWO_PI;
+					x1 = x + Math.cos(p) * r * window.devicePixelRatio;
+					y1 = y + Math.sin(p) * r * window.devicePixelRatio;
+					stage.context[i === 0 ? 'moveTo' : 'lineTo'](x1, y1);
+				}
+				stage.context.stroke();
+				stage.context.closePath();
+			};
+
+			Spore.prototype.isAlive = function() {
+				return this.age <= this.lifespan;
+			};
+
+			Spore.prototype.render = function(stage) {
+				var i, n, x, y, p, m, opacity, theta, velocity, pt;
+
+				this.age++;
+				if (this.isAlive()) {
+					opacity = Math.pow(Math.sin((this.lifespan - this.age) / this.lifespan * Math.PI), 2);
+					p = this.age / this.lifespan;
+
+					stage.context.lineWidth = 1 * (1 - p) * window.devicePixelRatio;
+					stage.context.fillStyle = 'rgba(' + this.rgb + ',' + (this.opacity * opacity * 0.01) + ')';
+
+					m = this.age % 20;
+					if (m <= 18) {
+						stage.context.strokeStyle = 'rgba(0,0,0,0)';
+					} else {
+						stage.context.strokeStyle = 'rgba(' + this.rgb + ',' + (this.opacity * opacity) + ')';
+					}
+
+					stage.context.beginPath();
+					for (i = 0, n = this.edge.length; i < n; i++) {
+						pt = this.edge[i];
+						pt.velocity *= 0.99;
+						pt.theta += p * (Math.random() - 0.5) * 0.05;
+						pt.x += pt.velocity * Math.cos(pt.theta);
+						pt.y += pt.velocity * Math.sin(pt.theta);
+						x = this.position.x + pt.x;
+						y = this.position.y + pt.y;
+						stage.context[i === 0 ? 'moveTo' : 'lineTo'](x, y);
+					}
+
+					stage.context.lineTo(this.position.x + this.edge[0].x, this.position.y + this.edge[0].y);
+					stage.context.stroke();
+					stage.context.closePath();
+
+					if (Math.random() <= SPORE_SPAWN_PROBABILITY) {
+						this.spawn(stage);
+					}
+				}
+			};
+
+			// setup method
+			var setup = function(stage) {
+				stage.context.fillStyle = 'rgba(1,20,10,1.0)';
+				stage.context.fillRect(0, 0, stage.width, stage.height);
+
+				var i, x, y;
+				for (i = 0; i < SPORE_COUNT; i++) {
+					x = stage.width / 2 + (Math.random() - 0.5) * 100 * window.devicePixelRatio;
+					y = stage.height / 2 + (Math.random() - 0.5) * 100 * window.devicePixelRatio;
+					this.spores.push(new Spore(x, y));
+				}
+			};
+
+			init({width: 1440, height: 900}, function(stage) {
+				if (stage.frame === 1) setup(stage);
+				if (stage.frame % 10 === 0) {
+					stage.context.fillStyle = 'rgba(5,5,5,0.03)';
+					stage.context.fillRect(0, 0, stage.width, stage.height);
+				}
+				for (var n = spores.length, i = n - 1; i >= 0; i--) {
+					spores[i].render(stage);
+					if (!spores[i].isAlive()) {
+						spores.splice(i, 1);
+					}
+				}
+			});
+		</script>
+	</body>
+</html>

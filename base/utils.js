@@ -1,14 +1,16 @@
 var utils = {};
 
-utils.createCanvas = function() {
+utils.createCanvas = function(width, height) {
 	var body    = document.getElementsByTagName('body')[0];
 	var canvas  = document.createElement('canvas');
 	var context = canvas.getContext('2d');
 	var resize  = function() {
-		canvas.setAttribute('width', window.innerWidth * window.devicePixelRatio);
-		canvas.setAttribute('height', window.innerHeight * window.devicePixelRatio);
-		canvas.style.width = window.innerWidth + 'px';
-		canvas.style.height = window.innerHeight + 'px';
+		var w = width || window.innerWidth;
+		var h = height || window.innerHeight;
+		canvas.setAttribute('width', w * window.devicePixelRatio);
+		canvas.setAttribute('height', h * window.devicePixelRatio);
+		canvas.style.width = w + 'px';
+		canvas.style.height = h + 'px';
 	};
 
 	context.scale(window.devicePixelRatio);

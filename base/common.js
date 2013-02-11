@@ -1,9 +1,19 @@
 var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
 var init = function(options, draw) {
-	var canvas = utils.createCanvas();
+	if (options.retina === false) {
+		window.devicePixelRatio = 1;
+	}
+
+	var canvas = utils.createCanvas(options.width, options.height);
 	var context = canvas.getContext('2d');
 	var frame = 0;
+	var stage = {
+		canvas  : canvas,
+		context : context,
+		mouseX  : 0,
+		mouseY  : 0
+	};
 
 	var redraw = function() {
 		var offset_x = Math.round(canvas.width / 2);
@@ -13,13 +23,10 @@ var init = function(options, draw) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
 			if (options.background) context.fillRect(0, 0, canvas.width, canvas.height);
 		}
-		return draw({
-			canvas  : canvas,
-			context : context,
-			width   : canvas.width,
-			height  : canvas.height,
-			frame   : frame++
-		});
+		stage.frame = frame++;
+		stage.width = canvas.width;
+		stage.height = canvas.height;
+		return draw(stage);
 	};
 
 	// initial background
@@ -33,8 +40,15 @@ var init = function(options, draw) {
 	el_fps.setAttribute('id', 'fps');
 	document.body.appendChild(el_fps);
 
+	// events
+	utils.addEvent(document.body, 'mousemove', function(e) {
+		stage.mouseX = e.clientX * window.devicePixelRatio;
+		stage.mouseY = e.clientY * window.devicePixelRatio;
+	});
+
 	// animation loop
 	utils.addEvent(window, 'resize', redraw);
+
 	var loop = function() {
 		var time_now = new Date().getTime();
 		var delta = (time_now - time_last) / 1000;
