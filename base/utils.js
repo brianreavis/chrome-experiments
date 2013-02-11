@@ -15,6 +15,13 @@ utils.createCanvas = function() {
 	document.body.appendChild(canvas);
 	utils.addEvent(window, 'resize', resize);
 	resize();
+
+	utils.addEvent(document.body, 'keydown', function(e) {
+		if (e.keyCode === 32) {
+			document.write('<img src="' + canvas.toDataURL('image/png') + '" style="width:100%">');
+		}
+	});
+
 	return canvas;
 };
 
