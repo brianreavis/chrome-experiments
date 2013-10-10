@@ -13,7 +13,7 @@ utils.createCanvas = function(width, height) {
 		canvas.style.height = h + 'px';
 	};
 
-	context.scale(window.devicePixelRatio);
+	context.scale(window.devicePixelRatio, window.devicePixelRatio);
 	document.body.appendChild(canvas);
 	utils.addEvent(window, 'resize', resize);
 	resize();
